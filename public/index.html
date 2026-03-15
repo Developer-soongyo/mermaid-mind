@@ -6,6 +6,7 @@
   <title>MermaidMind</title>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
   <style>
     :root {
       --sidebar-w: 260px;
@@ -556,7 +557,22 @@
       font-size: 13px;
       line-height: 1.7;
       color: var(--text);
-      white-space: pre-wrap;
+    }
+    .explain-modal .explain-content h1,
+    .explain-modal .explain-content h2,
+    .explain-modal .explain-content h3 {
+      margin: 12px 0 6px;
+      color: var(--text);
+    }
+    .explain-modal .explain-content p { margin: 0 0 8px; }
+    .explain-modal .explain-content ul,
+    .explain-modal .explain-content ol { margin: 0 0 8px; padding-left: 20px; }
+    .explain-modal .explain-content li { margin-bottom: 4px; }
+    .explain-modal .explain-content code {
+      background: var(--surface);
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 12px;
     }
     .explain-modal .explain-close {
       margin-top: 16px;
@@ -919,6 +935,7 @@
         <div class="export-wrap">
           <button class="btn btn-secondary" onclick="toggleExport()">&#8615; Export</button>
           <div class="export-menu" id="exportMenu">
+            <div class="export-item" onclick="exportClipboard()">Copy to Clipboard</div>
             <div class="export-item" onclick="exportSVG()">SVG</div>
             <div class="export-item" onclick="exportPNG()">PNG</div>
             <div class="export-item" onclick="exportPDF()">PDF</div>
@@ -979,6 +996,7 @@
     <div class="export-wrap">
       <button class="btn btn-secondary" onclick="togglePresExport()">&#8615; Export</button>
       <div class="export-menu" id="presExportMenu">
+        <div class="export-item" onclick="exportClipboard();togglePresExport()">Copy to Clipboard</div>
         <div class="export-item" onclick="exportSVG();togglePresExport()">SVG</div>
         <div class="export-item" onclick="exportPNG();togglePresExport()">PNG</div>
         <div class="export-item" onclick="exportPDF();togglePresExport()">PDF</div>
@@ -1591,6 +1609,33 @@ function toggleExport() {
   document.getElementById("exportMenu").classList.toggle("open");
 }
 
+async function exportClipboard() {
+  const svg = document.querySelector("#previewCanvas svg");
+  if (!svg) return;
+  const clone = svg.cloneNode(true);
+  clone.style.transform = "";
+  const svgData = new XMLSerializer().serializeToString(clone);
+  const canvas = document.createElement("canvas");
+  const bbox = svg.getBoundingClientRect();
+  const scale = 2;
+  canvas.width = bbox.width * scale;
+  canvas.height = bbox.height * scale;
+  const ctx = canvas.getContext("2d");
+  const img = new Image();
+  img.onload = async () => {
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    try {
+      const blob = await new Promise(r => canvas.toBlob(r, "image/png"));
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      showSettingsStatus("Copied to clipboard!", "success");
+    } catch {
+      showSettingsStatus("Clipboard copy failed", "error");
+    }
+  };
+  img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+  toggleExport();
+}
+
 function exportSVG() {
   const svg = document.querySelector("#previewCanvas svg");
   if (!svg) return;
@@ -2032,7 +2077,7 @@ async function runAIAction(action, prompt) {
     if (data.error) throw new Error(data.error);
 
     if (action === "explain") {
-      document.getElementById("explainContent").textContent = data.result;
+      document.getElementById("explainContent").innerHTML = marked.parse(data.result);
       document.getElementById("explainOverlay").classList.add("open");
     } else {
       // theme, fix, expand — try rendering, fallback to original if it breaks
