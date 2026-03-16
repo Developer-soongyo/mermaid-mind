@@ -332,6 +332,12 @@ app.get("/api/versions/:versionId", (req, res) => {
   res.json(version);
 });
 
+app.delete("/api/versions/:versionId", (req, res) => {
+  const changes = db.deleteVersion(req.params.versionId);
+  if (!changes) return res.status(404).json({ error: "Not found" });
+  res.json({ success: true });
+});
+
 app.get("/api/history/:id/versions", (req, res) => {
   const diagram = db.getDiagram(req.params.id);
   if (!diagram) return res.status(404).json({ error: "Not found" });

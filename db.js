@@ -55,6 +55,7 @@ const stmtInsertVersion = db.prepare(
   "INSERT INTO versions (diagram_id, name, mermaid) VALUES (?, ?, ?)"
 );
 const stmtGetVersion = db.prepare("SELECT * FROM versions WHERE id = ?");
+const stmtDeleteVersion = db.prepare("DELETE FROM versions WHERE id = ?");
 
 // Tags
 const stmtAllTags = db.prepare("SELECT * FROM tags ORDER BY name");
@@ -112,6 +113,11 @@ module.exports = {
   getVersions: (diagramId) => stmtVersions.all(diagramId),
 
   getVersion: (id) => stmtGetVersion.get(id),
+
+  deleteVersion: (id) => {
+    const info = stmtDeleteVersion.run(id);
+    return info.changes;
+  },
 
   insertVersion: (diagramId, { name, mermaid }) => {
     const info = stmtInsertVersion.run(diagramId, name || null, mermaid);
