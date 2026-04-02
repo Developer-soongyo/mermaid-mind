@@ -60,6 +60,75 @@ Set these in `.env` or via the Settings panel in the UI:
 
 Settings can also be configured at runtime via the UI settings panel. UI settings override `.env` values.
 
+## Running as a Background Daemon (macOS)
+
+You can run MermaidMind as a background daemon using macOS `launchd` so it starts automatically on login and restarts if it crashes.
+
+### Setup
+
+Create the file `~/Library/LaunchAgents/com.mermaid.mind.plist`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.mermaid.mind</string>
+
+    <key>WorkingDirectory</key>
+    <string>/path/to/mermaid-mind</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/path/to/node</string>
+        <string>server.js</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>~/Library/Logs/mermaid-mind.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>~/Library/Logs/mermaid-mind.err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/path/to/node/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>PORT</key>
+        <string>3940</string>
+    </dict>
+</dict>
+</plist>
+```
+
+> Replace `/path/to/node` with the output of `which node` and `/path/to/mermaid-mind` with your actual project path.
+
+### Commands
+
+```bash
+# Load and start the daemon
+launchctl load ~/Library/LaunchAgents/com.mermaid.mind.plist
+
+# Stop and unload the daemon
+launchctl unload ~/Library/LaunchAgents/com.mermaid.mind.plist
+
+# Check status
+launchctl list | grep mermaid
+
+# View logs
+tail -f ~/Library/Logs/mermaid-mind.log
+tail -f ~/Library/Logs/mermaid-mind.err.log
+```
+
+The server will be available at `http://localhost:3940` after loading.
+
 ## Project Structure
 
 ```
